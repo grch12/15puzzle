@@ -6,14 +6,17 @@ LDFLAGS = E:/projects/libs/pdcurses/mod4.5.4/wingui/pdcurses.a -lgdi32 -lcomdlg3
 
 BIN = 15puzzle.exe
 
+SOURCES = $(wildcard *.c)
+OBJS = $(patsubst %.c, %.o, $(SOURCES))
+
 .PHONY: all clean rebuild
 
 all: $(BIN)
 
-$(BIN): main.o
-	$(CC) -o $(BIN) main.o $(LDFLAGS)
+$(BIN): $(OBJS)
+	$(CC) -o $(BIN) $^ $(LDFLAGS)
 
 clean:
-	$(RM) $(BIN) main.o
+	$(RM) $(BIN) $(OBJS)
 
 rebuild: clean all

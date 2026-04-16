@@ -8,14 +8,14 @@
 #include <curses.h>
 #endif
 
-int board[] = {
-  1,  2,  3,  4,
-  5,  6,  7,  8,
-  9,  10, 11, 12,
-  13, 14, 15, 0
-};
+#include "board.h"
 
 int moves = 0;
+
+typedef enum {DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT} Direction;
+
+// Array of move functions, used to map directions to moves
+bool (* move_map[])(void) = {move_up, move_down, move_left, move_right};
 
 /**
  * Prints the 15-puzzle game board with borders and numbers.
@@ -66,83 +66,42 @@ void print_grid(void) {
   }
 }
 
-bool is_solved(void) {
-  for (int i = 0; i < (int)(sizeof(board) / sizeof(int)); i++) {
-    int target = i == 15 ? 0 : i + 1;
-    if (board[i] != target)
-      return false;
-  }
-  return true;
-}
-
-int find_empty(void) {
-  for (int i = 0; i < (int)(sizeof(board) / sizeof(int)); i++) {
-    if (board[i] == 0)
-      return i;
-  }
-  return -1;
-}
-
 void print_game(void) {
+  clear();
   print_grid();
   addstr("Use WASD or arrow keys to control, Q to quit, R to restart\n");
   printw("Moves: %d\n", moves);
 }
 
-void move_up(void) {
-  int empty_index = find_empty();
-  if (empty_index / 4 == 3)
-    return;
-  board[empty_index] = board[empty_index + 4];
-  board[empty_index + 4] = 0;
-  moves++;
-}
-
-void move_down(void) {
-  int empty_index = find_empty();
-  if (empty_index / 4 == 0)
-    return;
-  board[empty_index] = board[empty_index - 4];
-  board[empty_index - 4] = 0;
-  moves++;
-}
-
-void move_left(void) {
-  int empty_index = find_empty();
-  if (empty_index % 4 == 3)
-    return;
-  board[empty_index] = board[empty_index + 1];
-  board[empty_index + 1] = 0;
-  moves++;
-}
-
-void move_right(void) {
-  int empty_index = find_empty();
-  if (empty_index % 4 == 0)
-    return;
-  board[empty_index] = board[empty_index - 1];
-  board[empty_index - 1] = 0;
-  moves++;
-}
 
 /**
- * @brief Shuffle the board by making 1000 random moves
- *
- * This function shuffles the board by making 1000 random moves. It
- * uses the rand() function to generate a random direction (up, down, left,
- * right) and then calls the corresponding move function to make the move.
- *
- * @return void
+ * @brief Shuffle the game board with a random sequence of moves
+ * @details This function performs a sequence of 1000 random moves on the
+ *          game board, effectively shuffling the board. This is used to
+ *          generate a random starting position for the game.
  */
 void shuffle(void) {
   for (int i = 0; i < 1000; i++) {
-    int direction = rand() % 4;
-    switch (direction) {
-      case 0: move_up(); break;
-      case 1: move_down(); break;
-      case 2: move_left(); break;
-      case 3: move_right(); break;
-    }
+    Direction dir = rand() % 4;
+    move_map[dir]();
+  }
+}
+
+/**
+ * @brief Handles a key press event in the game loop
+ *
+ * This function is called when the user presses a key in the game loop.
+ * It checks if the game is currently solved, and if not, it attempts to
+ * make a move in the specified direction. If the move is successful, it
+ * increments the move counter.
+ *
+ * @param dir The direction of the move to attempt
+ * @param solved Whether the game is currently solved
+ */
+void keypress(Direction dir, bool solved) {
+  if (!solved) {
+    bool moved = move_map[dir]();
+    if (moved) moves++;
   }
 }
 
@@ -157,8 +116,7 @@ void shuffle(void) {
  * @return void
  */
 void game_loop(void) {
-  bool game_over = false;
-  while (!game_over) {
+  for (;;) {
     shuffle();
     moves = 0;
     for (;;) {
@@ -173,36 +131,33 @@ void game_loop(void) {
       int ch = getch();
       switch (ch) {
         case 'w': case 'W': case KEY_UP: {
-          if (!solved) move_up();
+          keypress(DIR_UP, solved);
           break;
         }
         case 's': case 'S': case KEY_DOWN: {
-          if (!solved) move_down();
+          keypress(DIR_DOWN, solved);
           break;
         }
         case 'a': case 'A': case KEY_LEFT: {
-          if (!solved) move_left();
+          keypress(DIR_LEFT, solved);
           break;
         }
         case 'd': case 'D': case KEY_RIGHT: {
-          if (!solved) move_right();
+          keypress(DIR_RIGHT, solved);
           break;
         }
         case 'r': case 'R': {
-          goto for_end; // goto is not always evil! for now, it's ok here
+          goto loop_end; // goto is not always evil! for now, it's ok here
         }
         case 'q': case 'Q': {
-          game_over = true;
-          goto for_end;
+          return;
         }
         default: {
           break;
         }
       }
-      clear();
     }
-    for_end:
-    clear();
+    loop_end:;
   }
 }
 
