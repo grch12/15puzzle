@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <time.h>
 
-#ifdef _POSIX
+#ifdef USE_NCURSES
 #include <ncurses.h>
 #else
 #include <curses.h>
@@ -167,6 +167,7 @@ int main(void) {
   noecho();
   cbreak();
   keypad(stdscr, true);
+  curs_set(0);
 
   game_loop();
 
