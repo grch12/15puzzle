@@ -6,13 +6,13 @@
 # If not, specify CURSES_INC and CURSES_LIB manually.
 
 # Configure your compiler and flags here
-# The default ones are for Windows with MinGW
+# The default ones are for Windows with PDCursesMod wingui
 # If you're on Unix, you can keep CFLAGS unchanged and leave LDFLAGS empty
 
 CC = gcc
 
-CFLAGS = $(CURSES_INC) -Wall -Wextra -Werror -std=c99 -pedantic -O2
-LDFLAGS = $(CURSES_LIB) -lgdi32 -lcomdlg32 -lwinmm -Wl,--gc-sections -s -mwindows
+CFLAGS := -Wall -Wextra -Werror -std=c99 -pedantic -O2
+LDFLAGS := -lgdi32 -lcomdlg32 -lwinmm -Wl,--gc-sections -s -mwindows
 
 # Do not edit below
 
@@ -40,7 +40,7 @@ else
 endif
 
 ifeq ($(PKGCONFIG_AVAILABLE),1)
-	ifneq (,$(CURSES_INC))
+	ifeq (,$(CURSES_INC))
 		CURSES_INC = $(shell pkg-config --cflags ncurses)
 		CURSES_LIB = $(shell pkg-config --libs ncurses)
 	endif
@@ -52,6 +52,9 @@ else
 	BIN = $(PROJECT_NAME)
 endif
 
+CFLAGS := $(CURSES_INC) $(CFLAGS)
+LDFLAGS := $(CURSES_LIB) $(LDFLAGS)
+
 SOURCES = $(wildcard *.c)
 OBJS = $(patsubst %.c, %.o, $(SOURCES))
 
@@ -59,7 +62,7 @@ OBJS = $(patsubst %.c, %.o, $(SOURCES))
 
 all: $(BIN)
 
-$(BIN): $(OBJS) $(ERR)
+$(BIN): $(OBJS)
 	$(CC) -o $(BIN) $^ $(LDFLAGS)
 
 clean:
